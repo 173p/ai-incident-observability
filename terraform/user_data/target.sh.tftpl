@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euxo pipefail
+hostnamectl set-hostname ${hostname}
+apt-get update
+apt-get install -y docker.io docker-compose-v2 git auditd stress
+usermod -aG docker ubuntu
+
+# SSH hardening
+sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+systemctl restart ssh
+
+git clone ${repo_url} /opt/ai-incident-observability
+cd /opt/ai-incident-observability/target-server
+sed -i "s/<monitoring-server-ip>/${monitoring_ip}/" promtail/promtail-config.yml
+sed -i "s/hostname: target-server-1/hostname: ${hostname}/" docker-compose.yml
+
+cp audit/stress.rules /etc/audit/rules.d/
+augenrules --load
+
+docker compose up -d

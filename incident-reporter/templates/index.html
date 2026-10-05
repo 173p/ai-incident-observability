@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h1><span class="bolt">&#9889;</span> AI Incident Reporter</h1>
+<p class="sub">Listening for Alertmanager webhooks on <code>/webhook</code></p>
+<div class="card">
+  {{ count }} report(s) generated since startup. <a href="/reports">View all reports</a>
+</div>
+{% endblock %}

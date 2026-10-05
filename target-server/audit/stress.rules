@@ -1,0 +1,3 @@
+# Copy to /etc/audit/rules.d/ then run: sudo augenrules --load
+# Logs every execution of stress, so a report can cite the command behind a CPU spike.
+-a always,exit -F arch=b64 -S execve -F exe=/usr/bin/stress -k stress_test

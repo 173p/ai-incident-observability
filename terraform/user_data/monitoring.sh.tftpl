@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euxo pipefail
+apt-get update
+apt-get install -y docker.io docker-compose-v2 git
+usermod -aG docker ubuntu
+git clone ${repo_url} /opt/ai-incident-observability
+
+# Run after copying .env and prometheus.yml to /home/ubuntu
+cat > /opt/finish-setup.sh <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+cd /opt/ai-incident-observability
+install -m 600 /home/ubuntu/.env .env
+cp /home/ubuntu/prometheus.yml monitoring-server/prometheus/prometheus.yml
+cd monitoring-server && docker compose --env-file ../.env up -d --build
+SCRIPT
+chmod +x /opt/finish-setup.sh

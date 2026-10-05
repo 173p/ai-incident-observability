@@ -1,0 +1,25 @@
+# ${TELEGRAM_BOT_TOKEN} and ${TELEGRAM_CHAT_ID} are substituted at container
+# start from .env (see docker-compose.yml).
+route:
+  receiver: telegram-and-reporter
+  group_by: ["alertname", "instance"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: telegram-and-reporter
+    telegram_configs:
+      - bot_token: "${TELEGRAM_BOT_TOKEN}"
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: HTML
+        send_resolved: true
+    webhook_configs:
+      - url: http://incident-reporter:5000/webhook
+        send_resolved: false
+
+inhibit_rules:
+  # a down instance suppresses its own warning-level alerts
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: ["instance"]

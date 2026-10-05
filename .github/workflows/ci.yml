@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  reporter:
+    name: Incident reporter (lint, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: incident-reporter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest -q
+      - run: docker build -t incident-reporter .
+
+  configs:
+    name: Validate Prometheus and Alertmanager configs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: promtool check rules
+        run: |
+          docker run --rm -v "$PWD/monitoring-server/prometheus:/p" --entrypoint promtool \
+            prom/prometheus:latest check rules /p/alert_rules.yml
+      - name: amtool check config
+        run: |
+          sed -e 's/${TELEGRAM_BOT_TOKEN}/123:dummy/' -e 's/${TELEGRAM_CHAT_ID}/-100/' \
+            monitoring-server/alertmanager/alertmanager.yml.tmpl > /tmp/am.yml
+          docker run --rm -v /tmp/am.yml:/am.yml --entrypoint amtool \
+            prom/alertmanager:latest check-config /am.yml
+
+  terraform:
+    name: Terraform (fmt, validate)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate

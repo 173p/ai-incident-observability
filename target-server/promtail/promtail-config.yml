@@ -1,0 +1,27 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  # monitoring server's private IP
+  - url: http://<monitoring-server-ip>:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: system
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: varlogs
+          __path__: /var/log/*log
+          # lastlog is a sparse binary file; its entries exceed Loki's size limit
+          __path_exclude__: /var/log/lastlog
+
+  - job_name: audit
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: auditlogs
+          __path__: /var/log/audit/audit.log

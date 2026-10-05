@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ r.alertname }} report{% endblock %}
+{% block content %}
+<a href="/reports">&larr; All Reports</a>
+<h1><span class="bolt">&#9889;</span> Auto-Generated Incident Report</h1>
+<p class="sub">Triggered automatically by Alertmanager</p>
+
+<div class="card">
+  <span class="badge">&#128680; {{ r.alertname }}</span>
+  <div class="grid">
+    <div class="box"><div class="label">Instance</div>{{ r.instance }}</div>
+    <div class="box"><div class="label">Window</div>{{ r.window_start }} &rarr; {{ r.window_end }}</div>
+    <div class="box"><div class="label">Generated At</div>{{ r.generated_at }}</div>
+  </div>
+  <h2>AI Analysis</h2>
+  <div class="box analysis">{{ r.analysis_html | safe }}</div>
+</div>
+
+<div class="card">
+  <h2>Metrics During Incident</h2>
+  {% if r.metrics %}
+  <div class="grid">
+    {% for name, m in r.metrics.items() %}
+    <div class="box">
+      <div class="metric-name">{{ name }}</div>
+      <div class="stats">
+        <div><b>{{ m.min }}%</b><span>MIN</span></div>
+        <div><b>{{ m.avg }}%</b><span>AVG</span></div>
+        <div><b>{{ m.max }}%</b><span>MAX</span></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<p class="sub">No metrics returned for this window.</p>{% endif %}
+</div>
+
+<div class="card">
+  <h2>Log Entries During Incident</h2>
+  <div class="box logs">
+    {% for line in r.logs %}<div>{{ line }}</div>{% else %}<div>No logs returned for this window.</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

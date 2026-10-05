@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<a href="/">&larr; Home</a>
+<h1>Incident Reports</h1>
+<p class="sub">Newest first. Reports are kept in memory until the service restarts.</p>
+<div class="card">
+{% if reports %}
+<table>
+  <tr><th>Alert</th><th>Instance</th><th>Generated</th><th></th></tr>
+  {% for r in reports %}
+  <tr>
+    <td class="{{ 'crit' if r.severity == 'critical' else 'warn' }}">{{ r.alertname }}</td>
+    <td>{{ r.instance }}</td><td>{{ r.generated_at }}</td>
+    <td><a href="/reports/{{ r.id }}">Open</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}<p>No reports yet.</p>{% endif %}
+</div>
+{% endblock %}

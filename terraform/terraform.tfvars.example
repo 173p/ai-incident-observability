@@ -1,0 +1,2 @@
+admin_cidr = "203.0.113.10/32"
+repo_url   = "https://github.com/173p/ai-incident-observability.git"

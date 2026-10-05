@@ -1,0 +1,69 @@
+
+← All Reports
+⚡ Auto-Generated Incident Report
+
+Triggered automatically by Alertmanager
+🚨 HighCPUUsage
+Instance
+<target-public-ip>:9100
+Window
+2026-08-26T19:35:04 -> 2026-08-26T19:50:04
+Generated At
+2026-08-26 19:45:57
+AI Analysis
+Incident Report
+
+
+
+1. Incident Summary
+During the 15-minute observation window, instance `target-server-1` experienced repeated SSH connection attempts from multiple external IPs (37.186.51.195, 38.210.59.5, 38.210.59.8) that were terminated without successful authentication. One legitimate user session (ubuntu from 203.0.113.10) authenticated via publickey and established a normal session. No service disruption or compromise was observed.
+
+2. Affected Systems
+- target-server-1: Primary target of SSH connection attempts; hosted legitimate user session
+- target-server-2: No anomalous activity; only routine `sysstat-collect` cron execution observed
+
+3. Key Findings
+
+4. Likely Root Cause
+Automated SSH scanning / credential stuffing from known hosting/VPN ranges (37.186.51.195 -> OVH, 38.210.59.0/24 -> DataCamp/Cloud). Connections terminate before authentication completes, suggesting either:
+- Banner grab / version enumeration
+- Failed key/auth attempts filtered by `MaxAuthTries` or `PasswordAuthentication no`
+- Connection drops by client after fingerprint check
+
+No evidence of successful unauthorized access, brute-force noise only.
+
+5. Recommended Actions
+1. Harden SSH: Confirm `PasswordAuthentication no`, `PermitRootLogin no`, `MaxAuthTries 3`, and `PubkeyAuthentication yes` in `sshd_config`; reload sshd.
+2. Deploy Fail2Ban / CrowdSec: Block IPs with >=3 failed connections in 10 min; auto-expire after 24 h.
+3. Network-Level Mitigation: Restrict SSH (port 22) to bastion/CIDR allow-list via Security Groups or NACLs.
+4. Audit AppArmor Profile: Adjust `who` profile if denial is spurious; otherwise document as expected.
+5. Enable Centralized Logging: Ship auth.log to SIEM (CloudWatch, Loki, Datadog) for correlation and alerting on anomaly thresholds.
+6. Rotate/Review Keys: Verify 203.0.113.10 is authorized; remove stale `authorized_keys` entries.
+
+
+
+No immediate response required; treat as continuous hardening opportunity.
+Log Entries During Incident
+2026-08-26T19:36:06.469125+00:00 target-server-1 sshd-session[4327]: syslogin_perform_logout: logout() returned an error
+2026-08-26T19:40:27.254416+00:00 target-server-1 sshd-session[4637]: Connection closed by 37.186.51.195 port 25972
+2026-08-26T19:39:26.857319+00:00 target-server-1 sshd-session[4631]: Connection closed by 37.186.51.195 port 25996
+2026-08-26T19:38:14.003340+00:00 target-server-1 sshd-session[4630]: Connection closed by 38.210.59.5 port 36404
+2026-08-26T19:38:09.931246+00:00 target-server-1 systemd-logind[630]: New session '24' of user 'ubuntu' with class 'user' and type 'tty'.
+2026-08-26T19:38:09.926311+00:00 target-server-1 sshd-session[4496]: pam_unix(sshd:session): session opened for user ubuntu(uid=1000) by ubuntu(uid=0)
+2026-08-26T19:38:09.925115+00:00 target-server-1 sshd-session[4496]: Accepted publickey for ubuntu from 203.0.113.10 port 6975 ssh2: RSA SHA256:<redacted>
+2026-08-26T19:38:04.663640+00:00 target-server-1 sshd-session[4495]: Connection closed by 38.210.59.8 port 33306
+2026-08-26T19:36:06.595375+00:00 target-server-1 systemd-logind[630]: Removed session 23.
+2026-08-26T19:36:06.594381+00:00 target-server-1 systemd-logind[630]: Session 23 logged out. Waiting for processes to exit.
+2026-08-26T19:36:06.594048+00:00 target-server-1 sshd-session[4327]: pam_unix(sshd:session): session closed for user ubuntu
+2026-08-26T19:36:06.593520+00:00 target-server-1 sshd-session[4383]: Disconnected from user ubuntu 203.0.113.10 port 3933
+2026-08-26T19:36:06.589884+00:00 target-server-1 sshd-session[4383]: Received disconnect from 203.0.113.10 port 3933:11: disconnected by user
+2026-08-26T19:38:10.198724+00:00 target-server-1 kernel: audit: type=1400 audit(1787773090.197:199): apparmor="DENIED" operation="open" class="file" profile="who" name="/usr/share/coreutils/locales/uucore/en-US.ftl" pid=4516 comm="who" requested_mask="r" denied_mask="r" fsuid=0 ouid=0
+2026-08-26T19:40:41.359729+00:00 target-server-2 systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-08-26T19:40:41.359335+00:00 target-server-2 systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-08-26T19:40:41.334498+00:00 target-server-2 systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-08-26T19:40:09.019157+00:00 target-server-1 systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-08-26T19:40:09.019057+00:00 target-server-1 systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-08-26T19:40:08.979483+00:00 target-server-1 systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-08-26T19:38:10.198724+00:00 target-server-1 kernel: audit: type=1400 audit(1787773090.197:199): apparmor="DENIED" operation="open" class="file" profile="who" name="/usr/share/coreutils/locales/uucore/en-US.ftl" pid=4516 comm="who" requested_mask="r" denied_mask="r" fsuid=0 ouid=0
+2026-08-26T19:38:09.934299+00:00 target-server-1 systemd[1]: Started session-24.scope - Session 24 of User ubuntu.
+2026-08-26T19:36:06.593932+00:00 target-server-1 systemd[1]: session-23.scope: Deactivated successfully.
